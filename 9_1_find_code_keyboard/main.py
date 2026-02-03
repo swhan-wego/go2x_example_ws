@@ -9,12 +9,26 @@ from unitree_webrtc_connect.webrtc_driver import UnitreeWebRTCConnection, WebRTC
 from unitree_webrtc_connect.constants import RTC_TOPIC, SPORT_CMD
 from pyzbar.pyzbar import decode
 
+from go2_libs.move_keyboard import WebRtcMoveKeyboard, MoveState
+
 logging.basicConfig(level=logging.FATAL)
 
 # 상태 상수 정의
 ST_IDLE = "IDLE"
 ST_READY = "READY"
 ST_VICTORY = "VICTORY" # 승리 상태 추가
+
+
+def keyboard_state_handler(new_state : MoveState):
+    # 상태 수동 전환
+    if new_state is None:   return
+    
+    if new_state == MoveState.RELEASE: robot_fsm.state = ST_IDLE
+    elif new_state == MoveState.READY: robot_fsm.state = ST_READY
+
+conn = UnitreeWebRTCConnection(WebRTCConnectionMethod.LocalSTA, ip="192.168.0.61")
+# conn = UnitreeWebRTCConnection(WebRTCConnectionMethod.LocalAP)
+move_keyboard = WebRtcMoveKeyboard(conn, onchange_callback=keyboard_state_handler, is_key_handle=True)
 
 class Go2StateMachine:
     def __init__(self):
@@ -42,87 +56,76 @@ class Go2StateMachine:
 
 robot_fsm = Go2StateMachine()
 
-def main():
-    conn = UnitreeWebRTCConnection(WebRTCConnectionMethod.LocalAP)
+async def recv_camera_stream(track):
+    fail_count = 0
+    while True:
+        try:
+            frame = await track.recv()
+            img = frame.to_ndarray(format="bgr24")
+            if robot_fsm.frame_queue.qsize() > 1:
+                try: robot_fsm.frame_queue.get_nowait()
+                except: pass
+            robot_fsm.frame_queue.put(img)
+            fail_count = 0 # 성공 시 카운트 초기화
+        except Exception as e:
+            fail_count += 1
+            if fail_count > 30: # 약 1초 이상 프레임이 안 오면 종료
+                print("[Video] 영상 스트림 유지 실패")
+                break
+            await asyncio.sleep(0.03) # 잠깐 대기 후 재시도
 
-    async def recv_camera_stream(track):
-        while True:
-            try:
-                frame = await track.recv()
-                img = frame.to_ndarray(format="bgr24")
-                if robot_fsm.frame_queue.qsize() > 1:
-                    try: robot_fsm.frame_queue.get_nowait()
-                    except: pass
-                robot_fsm.frame_queue.put(img)
-            except: break
-
-    def run_asyncio_loop(loop):
-        asyncio.set_event_loop(loop)
-        async def control_logic():
-            await conn.connect()
-            conn.video.switchVideoChannel(True)
-            conn.video.add_track_callback(recv_camera_stream)
+async def control_logic():
+    prev_state = None
+    print("[System] 제어 로직 시작")
+    
+    while True:
+        # 상태 전이 로직
+        if robot_fsm.state != prev_state:
+            if robot_fsm.state == ST_IDLE:
+                print("[Mode] 대기 상태: 로봇이 앉습니다.")
+                robot_fsm.reset_score()
             
-            prev_state = None
+            elif robot_fsm.state == ST_READY:
+                print("[Mode] 준비 상태: 로봇이 일어섭니다.")
+                await asyncio.sleep(3)  
 
-            while True:
-                # 상태 전이 로직
-                if robot_fsm.state != prev_state:
-                    if robot_fsm.state == ST_IDLE:
-                        print("[Mode] 대기 상태: 로봇이 앉습니다.")
-                        await conn.datachannel.pub_sub.publish_request_new(
-                            # 로봇이 앉는 동작 호출 SPORT_CMD 사용
-                            RTC_TOPIC["SPORT_MOD"],
-                            {"api_id": SPORT_CMD["StandDown"]}
-                        )
-                        robot_fsm.reset_score()
-                    
-                    elif robot_fsm.state == ST_READY:
-                        print("[Mode] 준비 상태: 로봇이 일어섭니다.")
-                        await conn.datachannel.pub_sub.publish_request_new(
-                            # 로봇이 일어나는 동작 호출 SPORT_CMD 사용
-                            RTC_TOPIC["SPORT_MOD"], 
-                            {"api_id": SPORT_CMD["RecoveryStand"]}
-                        )
-                        await asyncio.sleep(3)
-
-                    elif robot_fsm.state == ST_VICTORY:
-                        print("[Mode] 승리! 축하 동작을 시작합니다.")
-                        # 1. 하트 그리기 또는 춤 (예: Hello -> Stretch -> Happy)
-                        for action in ["Hello", "Happy", "Stretch"]:
-                            await conn.datachannel.pub_sub.publish_request_new(
-                                RTC_TOPIC["SPORT_MOD"], {"api_id": SPORT_CMD[action]}
-                            )
-                            await asyncio.sleep(3.0) # 동작 완수를 위한 대기
-                        
-                        print("[Mode] 축하 종료. 대기 상태로 복귀합니다.")
-                        robot_fsm.state = ST_IDLE
-                    
-                    prev_state = robot_fsm.state
-
-                # 이동 명령 (READY일 때만 전송)
-                if robot_fsm.state == ST_READY:
-                    await conn.datachannel.pub_sub.publish_request_new(
-                        RTC_TOPIC["SPORT_MOD"], 
-                        {"api_id": SPORT_CMD["Move"], "parameter": robot_fsm.current_move}
-                    )
+            elif robot_fsm.state == ST_VICTORY:
+                print("[Mode] 승리! 축하 동작을 시작합니다.")
+                move_keyboard.hello()
+                await asyncio.sleep(5.0) # 동작 완수를 위한 대기
+                print("[Mode] 축하 종료. 대기 상태로 복귀합니다.")
+                robot_fsm.state = ST_IDLE
+            
+            prev_state = robot_fsm.state
                 
-                await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)
 
-        loop.run_until_complete(control_logic())
-
-    loop = asyncio.new_event_loop()
-    threading.Thread(target=run_asyncio_loop, args=(loop,), daemon=True).start()
-
+async def main():
+    
+    # [수정] WebRTC 연결 및 설정
+    await conn.connect()
+    conn.video.switchVideoChannel(True)
+    conn.video.add_track_callback(recv_camera_stream)
+    
+    # [핵심] control_logic을 백그라운드 태스크로 직접 실행 (스레드 불필요)
+    
+    asyncio.create_task(move_keyboard.control_logic())
+    asyncio.create_task(control_logic())
+    
     cv2.namedWindow("Go2 Quest Mode")
+    frame_count = 0
     
     try:
+        frame_count = 0
         while True:
+            await asyncio.sleep(0.01)
+            
             if not robot_fsm.frame_queue.empty():
                 img = robot_fsm.frame_queue.get()
+                frame_count += 1
                 
                 # QR 인식 (READY 상태에서만 유효)
-                if robot_fsm.state == ST_READY:
+                if robot_fsm.state == ST_READY and frame_count % 10 == 0:
                     for qr in decode(img):
                         data = qr.data.decode('utf-8')
                         is_new = robot_fsm.add_qr(data)
@@ -139,26 +142,10 @@ def main():
                 cv2.putText(img, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                 
                 cv2.imshow("Go2 Quest Mode", img)
-
-            key = cv2.waitKey(30) & 0xFF
-            if key == 27: break
-            
-            # 상태 수동 전환
-            if key == ord('1'): robot_fsm.state = ST_IDLE
-            if key == ord('2'): robot_fsm.state = ST_READY
-
-            # 조종 (READY일 때만 동작)
-            vx, vy, vz = 0.0, 0.0, 0.0
-            if robot_fsm.state == ST_READY:
-                if key == ord('w'): vx = 0.8
-                elif key == ord('s'): vx = -0.8
-                elif key == ord('a'): vz = 0.6
-                elif key == ord('d'): vz = -0.6
-            
-            robot_fsm.current_move = {"x": vx, "y": vy, "z": vz}
+                cv2.waitKey(1)
 
     finally:
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

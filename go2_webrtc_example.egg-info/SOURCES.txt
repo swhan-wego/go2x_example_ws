@@ -1,0 +1,9 @@
+go2_state_viewer.py
+pyproject.toml
+./go2_libs/move_keyboard.py
+./go2_libs/state_monitor.py
+go2_webrtc_example.egg-info/PKG-INFO
+go2_webrtc_example.egg-info/SOURCES.txt
+go2_webrtc_example.egg-info/dependency_links.txt
+go2_webrtc_example.egg-info/requires.txt
+go2_webrtc_example.egg-info/top_level.txt
