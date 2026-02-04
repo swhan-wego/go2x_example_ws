@@ -25,6 +25,9 @@ packages = ["go2_libs"]
 # 현재 디렉토리(.) 아래의 폴더들을 패키지로 등록합니다.
 "" = "."
 
+[tool.uv.sources]
+unitree_webrtc_connect = { path = "../unitree_webrtc_connect", editable = true }
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"

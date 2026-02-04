@@ -10,3 +10,4 @@ Requires-Dist: aiortc
 Requires-Dist: pyzbar
 Requires-Dist: unitree-webrtc-connect @ git+https://github.com/legion1581/unitree_webrtc_connect.git
 Requires-Dist: unitree_sdk2py @ git+https://github.com/unitreerobotics/unitree_sdk2_python.git
+Requires-Dist: pynput
