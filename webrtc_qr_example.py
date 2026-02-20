@@ -6,7 +6,7 @@ import threading
 import time
 from queue import Queue
 from unitree_webrtc_connect.webrtc_driver import UnitreeWebRTCConnection, WebRTCConnectionMethod
-from unitree_webrtc_connect.constants import RTC_TOPIC, VUI_COLOR
+from unitree_webrtc_connect.constants import RTC_TOPIC
 from aiortc import MediaStreamTrack
 from pyzbar.pyzbar import decode
 
@@ -14,10 +14,10 @@ from pyzbar.pyzbar import decode
 logging.basicConfig(level=logging.FATAL)
 
 detector = cv2.wechat_qrcode_WeChatQRCode(
-    "detect_2021nov.prototxt", 
-    "detect_2021nov.caffemodel", 
-    "sr_2021nov.prototxt", 
-    "sr_2021nov.caffemodel"
+    "aseset/detect_2021nov.prototxt", 
+    "aseset/detect_2021nov.caffemodel", 
+    "aseset/sr_2021nov.prototxt", 
+    "aseset/sr_2021nov.caffemodel"
 )
 
 def main():

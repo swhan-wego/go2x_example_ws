@@ -1,0 +1,39 @@
+key_map:
+  - key: w
+    cooldown: 1.0
+  - key: s
+    cooldown: 1.0
+  - key: a
+    cooldown: 1.0
+  - key: d
+    cooldown: 1.0
+  - key: q
+    cooldown: 1.0
+  - key: e
+    cooldown: 1.0
+  - key: up
+    cooldown: 0.5
+  - key: down
+    cooldown: 0.5
+  - key: left
+    cooldown: 0.5
+  - key: right
+    cooldown: 0.5
+  - key: space
+    cooldown: 0.5
+  - key: enter
+    cooldown: 0.5
+  - key: z
+    cooldown: 0.5
+  - key: x
+    cooldown: 0.5
+  - key: c
+    cooldown: 0.5
+  - key: h
+    cooldown: 0.5
+  - key: i
+    cooldown: 0.5
+  - key: o
+    cooldown: 0.5
+  - key: p
+    cooldown: 0.5

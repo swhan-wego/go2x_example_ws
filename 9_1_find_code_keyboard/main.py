@@ -9,7 +9,7 @@ from unitree_webrtc_connect.webrtc_driver import UnitreeWebRTCConnection, WebRTC
 from unitree_webrtc_connect.constants import RTC_TOPIC, SPORT_CMD
 from pyzbar.pyzbar import decode
 
-from go2_libs.move_keyboard import WebRtcMoveKeyboard, MoveState
+from go2_libs.terminal_keyboard import WebRtcMoveKeyboard, MoveState
 
 logging.basicConfig(level=logging.FATAL)
 
@@ -101,7 +101,6 @@ async def control_logic():
         await asyncio.sleep(0.5)
 
 async def main():
-    
     # [수정] WebRTC 연결 및 설정
     await conn.connect()
     conn.video.switchVideoChannel(True)

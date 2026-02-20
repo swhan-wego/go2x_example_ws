@@ -1,0 +1,5 @@
+/unitree_robot_node:
+  ros__parameters:
+    move_speed: 0.5
+    side_speed: 0.3
+    turn_speed: 1.0

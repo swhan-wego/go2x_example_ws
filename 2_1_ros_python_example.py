@@ -59,7 +59,13 @@ class Go2AdvancedMove(Node):
             self.client.StopMove()
             self.get_logger().info("모든 동작이 완료되었습니다.")
             self.timer.cancel()
+            self.state = "DOWN"
             # 필요 시 여기서 rclpy.shutdown() 호출 가능
+        
+        elif self.state == "DOWN":
+            self.client.StandDown()
+            self.get_logger().info("상태 전환: 엎드림")
+            self.timer.cancel()
 
 def main():
     # 실행 시 인터페이스 이름을 인자로 받음 (예: eth0, wlan0)
