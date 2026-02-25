@@ -6,24 +6,27 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "opencv-contrib-python>=4.8.0",
-    "numpy",
+    "numpy<2",
     "aiortc",
     "pyzbar",
     "unitree-webrtc-connect @ git+https://github.com/legion1581/unitree_webrtc_connect.git",
     "unitree_sdk2py @ git+https://github.com/unitreerobotics/unitree_sdk2_python.git",
-    "pynput"
+    "pynput",
+    "PyYAML",
+    "janus",
 ]
 
 [tool.uv]
 # uv 전용 설정 (필요시 추가)
 
 [tool.setuptools]
-# 프로젝트 루트를 패키지로 인식하게 하여 libs, 9_1_... 등을 모두 모듈로 접근 가능하게 합니다.
-packages = ["go2_libs"]
 
 [tool.setuptools.package-dir]
 # 현재 디렉토리(.) 아래의 폴더들을 패키지로 등록합니다.
 "" = "."
+
+[tool.uv.sources]
+unitree_webrtc_connect = { path = "../unitree_webrtc_connect", editable = true }
 
 [build-system]
 requires = ["setuptools>=61.0"]

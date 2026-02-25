@@ -1,6 +1,0 @@
-opencv-contrib-python>=4.8.0
-numpy
-aiortc
-pyzbar
-unitree-webrtc-connect @ git+https://github.com/legion1581/unitree_webrtc_connect.git
-unitree_sdk2py @ git+https://github.com/unitreerobotics/unitree_sdk2_python.git

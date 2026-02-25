@@ -1,2 +1,6 @@
 *.caffemodel
 *.prototxt
+
+build/*
+install/*
+log/*

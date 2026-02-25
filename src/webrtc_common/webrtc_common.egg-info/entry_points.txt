@@ -1,0 +1,6 @@
+[console_scripts]
+webrtc_keyboard_handler = webrtc_common.keyboard_handler:main
+webrtc_qrcode = webrtc_common.qrcode:main
+webrtc_terminal_keyboard = webrtc_common.terminal_keyboard:main
+webrtc_unitree_ros = webrtc_common.webrtc_unitree_ros:main
+webrtc_webcam = webrtc_common.webcam:main
