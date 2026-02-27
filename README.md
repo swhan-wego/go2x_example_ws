@@ -4,6 +4,7 @@
 
 - 이 워크스페이스는 Unitree Go2 로봇과 연동하는 WebRTC ↔ ROS2 브릿지와 예제 애플리케이션을 포함합니다.
 - 주요 구성요소: `webrtc_common` (공유 노드/유틸리티), `webrtc_app` (예제 노드·런치)
+- ROS2 Humble 기준
 
 ## 주요 경로
 
@@ -43,6 +44,16 @@ source install/setup.bash
 
 ## 런치 및 실행 예
 
+- Go2 기본 런치:
+
+```bash
+cd go2x_example_ws/
+source .venv/bin/activate
+source install/setup.bash
+source ./setup_netif.sh 
+ros2 launch webrtc_common unitree_launch.py
+```
+
 - 패키지 런치 (권장):
 
 ```bash
@@ -62,6 +73,51 @@ webrtc_keyboard_handler --ros-args -p keymap:=src/webrtc_common/config/key_confi
 color_block_tracker --ros-args -p image_topic:=/front_camera
 ```
 
+## 테스트 방법
+
+### ROS 토픽 발행
+전진/후진
+```
+# 전진
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+
+# 후진
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: -0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+```
+
+좌/우 이동
+```
+# 좌로 이동
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.5, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+
+# 우로 이동
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: -0.5, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+```
+
+회전
+```
+# 시계 방향 회전
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: -0.5}}'
+
+# 반시계 방향 회전
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.5}}'
+```
+
+정지
+```
+# 정지
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+```
+연속 발행 (지속 제어가 필요한 경우)
+```
+# --once 대신 -r 10 옵션으로 10Hz 지속 발행
+ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+```
+
+> --once: 한 번만 발행 후 종료\
+> -r 10: 10Hz로 지속 발행 (Ctrl+C로 종료)
+
+
 ## 구성 및 리소스
 
 - QR 모델 파일: 워크스페이스 루트의 `models/` 폴더에 위치해야 합니다 (참조: `src/webrtc_common/webrtc_common/qrcode.py`).
@@ -75,13 +131,14 @@ color_block_tracker --ros-args -p image_topic:=/front_camera
 
 ### CycloneDDS 네트워크 인터페이스 설정 확인
 
-```
+```sh
 (go2x_example_ws) wego@wego-Thin-15-B13VE:~/go2x_example_ws$ echo "$CYCLONEDDS_URI"
 <CycloneDDS><Domain id="any"><General><Interfaces><NetworkInterface name="wlx705dccf78722" priority="default" multicast="default" /></Interfaces></General></Domain></CycloneDDS>
 ```
 
 ### CycloneDDS 네트워크 인터페이스 설정 스크립트 실행
-```
+
+```ini
 (go2x_example_ws) wego@wego-Thin-15-B13VE:~/go2x_example_ws$ source ./setup_netif.sh 
 
 ========================================
