@@ -1,0 +1,20 @@
+setuptools==58.2.0
+opencv-contrib-python>=4.8.0
+numpy<2
+aiortc
+pyzbar
+unitree-webrtc-connect @ git+https://github.com/legion1581/unitree_webrtc_connect.git
+unitree_sdk2py @ git+https://github.com/unitreerobotics/unitree_sdk2_python.git
+pynput
+PyYAML
+janus
+ollama
+mcp
+asyncio
+pydantic
+faster-whisper>=1.0.0
+sounddevice>=0.4.6
+numpy>=1.24.0
+edge-tts>=6.1.0
+pygame>=2.5.0
+webrtcvad>=2.0.10

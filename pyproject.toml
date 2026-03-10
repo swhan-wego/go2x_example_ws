@@ -3,8 +3,9 @@ name = "go2-webrtc-example"
 version = "0.1.0"
 description = "Unitree Go2 WebRTC Example"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.10.*"
 dependencies = [
+    "setuptools==58.2.0",
     "opencv-contrib-python>=4.8.0",
     "numpy<2",
     "aiortc",
@@ -14,6 +15,16 @@ dependencies = [
     "pynput",
     "PyYAML",
     "janus",
+    "ollama",
+    "mcp",
+    "asyncio",
+    "pydantic",
+    "faster-whisper>=1.0.0",
+    "sounddevice>=0.4.6",
+    "numpy>=1.24.0",
+    "edge-tts>=6.1.0",
+    "pygame>=2.5.0",
+    "webrtcvad>=2.0.10"
 ]
 
 [tool.uv]

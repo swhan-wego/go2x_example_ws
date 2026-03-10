@@ -1,3 +1,30 @@
+Metadata-Version: 2.4
+Name: go2-webrtc-example
+Version: 0.1.0
+Summary: Unitree Go2 WebRTC Example
+Requires-Python: ==3.10.*
+Description-Content-Type: text/markdown
+Requires-Dist: setuptools==58.2.0
+Requires-Dist: opencv-contrib-python>=4.8.0
+Requires-Dist: numpy<2
+Requires-Dist: aiortc
+Requires-Dist: pyzbar
+Requires-Dist: unitree-webrtc-connect @ git+https://github.com/legion1581/unitree_webrtc_connect.git
+Requires-Dist: unitree_sdk2py @ git+https://github.com/unitreerobotics/unitree_sdk2_python.git
+Requires-Dist: pynput
+Requires-Dist: PyYAML
+Requires-Dist: janus
+Requires-Dist: ollama
+Requires-Dist: mcp
+Requires-Dist: asyncio
+Requires-Dist: pydantic
+Requires-Dist: faster-whisper>=1.0.0
+Requires-Dist: sounddevice>=0.4.6
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: edge-tts>=6.1.0
+Requires-Dist: pygame>=2.5.0
+Requires-Dist: webrtcvad>=2.0.10
+
 # Go2 WebRTC 예제 워크스페이스
 
 간단한 설명
@@ -52,10 +79,9 @@ source install/setup.bash
 ```bash
 cd ~/go2x_example_ws/
 source .venv/bin/activate
-export PYTHONPATH=$PWD/.venv/lib/python3.10/site-packages:$PYTHONPATH
 source install/setup.bash
 # 네트워크 인터페이스가 제대로 설정되지 않았을 경우 아래 명령 실행
-source ./setup_netif.sh
+source ./setup_netif.sh 
 ros2 launch webrtc_common unitree_launch.py
 ```
 

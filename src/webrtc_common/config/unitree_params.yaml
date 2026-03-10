@@ -1,5 +1,6 @@
 /unitree_robot_node:
   ros__parameters:
+    # ip: 10.42.0.221
     move_speed: 0.5
     side_speed: 0.3
     turn_speed: 1.0

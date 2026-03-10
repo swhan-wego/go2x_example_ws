@@ -1,0 +1,23 @@
+# 7장: 음성 제어 로봇 (STT/TTS) — 필요 패키지
+#
+# 설치 방법:
+#   python3 -m venv ~/voice_robot_env
+#   source ~/voice_robot_env/bin/activate
+#   pip install -r requirements.txt
+#
+# 시스템 의존성 (Ubuntu):
+#   sudo apt install -y portaudio19-dev python3-pyaudio ffmpeg
+
+# 음성 인식 (STT)
+faster-whisper>=1.0.0
+
+# 오디오 캡처 및 처리
+sounddevice>=0.4.6
+numpy>=1.24.0
+
+# 음성 합성 (TTS)
+edge-tts>=6.1.0
+pygame>=2.5.0
+
+# 음성 구간 감지 (VAD)
+webrtcvad>=2.0.10

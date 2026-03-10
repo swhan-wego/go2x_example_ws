@@ -2,17 +2,37 @@
 """
 robot_control_node.py
 ─────────────────────────────────────────────────────────────
-역할  : /robot_cmd (JSON) 수신 → geometry_msgs/Twist 생성
-        → /cmd_vel 주기 퍼블리시 (duration 후 자동 정지)
+역할  : /robot_cmd (JSON) 수신
+        → twist 타입  : geometry_msgs/Twist → /cmd_vel 주기 발행
+                        (duration 후 자동 정지)
+        → 기타 타입  : JSON 그대로 → /build_cmd 단발 발행
+                        (COMMAND_MAP 키: move/euler/bodyheight/
+                         stand_up/stand_down/balance_stand/
+                         damp/hello/sit/pose)
         → /estop 수신 시 즉시 긴급 정지
 
 토픽  : Subscribe  /robot_cmd  (std_msgs/String, JSON 객체)
                    /estop      (std_msgs/String)
         Publish    /cmd_vel    (geometry_msgs/Twist)
+                   /build_cmd  (std_msgs/String, JSON 객체)
 
 파라미터:
-  - cmd_vel_topic : 발행할 cmd_vel 토픽 이름 (기본: /cmd_vel)
-  - publish_rate  : Twist 발행 주파수 (Hz)   (기본: 10.0)
+  - cmd_vel_topic   : 발행할 cmd_vel 토픽 이름 (기본: /cmd_vel)
+  - build_cmd_topic : 발행할 build_cmd 토픽 이름 (기본: /build_cmd)
+  - publish_rate    : Twist 발행 주파수 (Hz)   (기본: 10.0)
+
+/robot_cmd 메시지 포맷:
+  twist        : {"type": "twist", "linear_x": 0.5, "angular_z": 0.3, "duration": 2.0}
+  move         : {"type": "move", "x": 0.5, "y": 0.0, "z": 0.0}
+  euler        : {"type": "euler", "roll": 0.1, "pitch": 0.0, "yaw": 0.0}
+  bodyheight   : {"type": "bodyheight", "height": 0.03}
+  stand_up     : {"type": "stand_up"}
+  stand_down   : {"type": "stand_down"}
+  balance_stand: {"type": "balance_stand"}
+  damp         : {"type": "damp"}
+  hello        : {"type": "hello"}
+  sit          : {"type": "sit"}
+  pose         : {"type": "pose"}
 
 /estop 메시지 규칙:
   활성화 : "1" | "true" | "stop"
@@ -38,12 +58,15 @@ class RobotControlNode(Node):
         super().__init__("robot_control_node")
 
         # ── 파라미터 선언 ──────────────────────────────────────────────────────
-        self.declare_parameter("cmd_vel_topic", "/cmd_vel")
-        self.declare_parameter("publish_rate",  10.0)
+        self.declare_parameter("cmd_vel_topic",   "/cmd_vel")
+        self.declare_parameter("build_cmd_topic", "/build_cmd")
+        self.declare_parameter("publish_rate",    10.0)
 
-        self.cmd_vel_topic = self.get_parameter(
+        self.cmd_vel_topic   = self.get_parameter(
             "cmd_vel_topic").get_parameter_value().string_value
-        self.publish_rate  = float(self.get_parameter(
+        self.build_cmd_topic = self.get_parameter(
+            "build_cmd_topic").get_parameter_value().string_value
+        self.publish_rate    = float(self.get_parameter(
             "publish_rate").get_parameter_value().double_value)
 
         # ── 상태 변수 (스레드 안전) ────────────────────────────────────────────
@@ -53,10 +76,11 @@ class RobotControlNode(Node):
         self._lock         = threading.Lock()
 
         # ── QoS: 실시간 제어용 Best-Effort ────────────────────────────────────
+        # QoS: align with typical cmd_vel subscribers (use RELIABLE)
         ctrl_qos = QoSProfile(
-            depth=1,
+            depth=10,
             history=QoSHistoryPolicy.KEEP_LAST,
-            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            reliability=QoSReliabilityPolicy.RELIABLE,
         )
 
         # ── ROS2 토픽 설정 ─────────────────────────────────────────────────────
@@ -77,6 +101,11 @@ class RobotControlNode(Node):
             self.cmd_vel_topic,
             ctrl_qos,
         )
+        self.pub_build_cmd = self.create_publisher(
+            String,
+            self.build_cmd_topic,
+            10,
+        )
 
         # ── 주기 발행 타이머 ───────────────────────────────────────────────────
         self.timer = self.create_timer(
@@ -86,7 +115,8 @@ class RobotControlNode(Node):
 
         self.get_logger().info(
             f"Robot Control Node 시작 — "
-            f"topic: {self.cmd_vel_topic}, "
+            f"cmd_vel: {self.cmd_vel_topic}, "
+            f"build_cmd: {self.build_cmd_topic}, "
             f"rate: {self.publish_rate} Hz"
         )
 
@@ -119,9 +149,17 @@ class RobotControlNode(Node):
 
         cmd_type = cmd.get("type", "")
 
-        if   cmd_type == "twist": self._execute_twist(cmd)
-        elif cmd_type == "sound": self._execute_sound(cmd)
-        elif cmd_type == "query": self._execute_query(cmd)
+        # COMMAND_MAP으로 전달할 타입 목록 (build_cmd 토픽으로 발행)
+        BUILD_CMD_TYPES = {
+            "move", "euler", "bodyheight",
+            "stand_up", "stand_down", "balance_stand",
+            "damp", "hello", "sit", "pose",
+        }
+
+        if   cmd_type == "twist":              self._execute_twist(cmd)
+        elif cmd_type in BUILD_CMD_TYPES:      self._execute_build_cmd(cmd)
+        elif cmd_type == "sound":              self._execute_sound(cmd)
+        elif cmd_type == "query":              self._execute_query(cmd)
         else:
             self.get_logger().warn(f"알 수 없는 cmd type: '{cmd_type}'")
 
@@ -164,6 +202,13 @@ class RobotControlNode(Node):
             f"angular_z={twist.angular.z:.2f} rad/s  "
             f"duration={duration:.1f}s"
         )
+
+    # ── build_cmd 명령 실행 (COMMAND_MAP 타입 → /build_cmd 발행) ─────────────
+    def _execute_build_cmd(self, cmd: dict) -> None:
+        msg = String()
+        msg.data = json.dumps(cmd)
+        self.pub_build_cmd.publish(msg)
+        self.get_logger().info(f"[build_cmd] 발행: {cmd}")
 
     # ── 소리 명령 실행 ───────────────────────────────────────────────────────
     def _execute_sound(self, cmd: dict) -> None:
