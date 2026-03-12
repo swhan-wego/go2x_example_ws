@@ -70,6 +70,8 @@ ros2 launch webrtc_app qrgame_launch.py
 ros2 launch webrtc_app color_track_basic.py
 # LLM 연동 노드
 ros2 launch llm_robot_agent llm_robot_agent.launch.py 
+# TTS/STT 연동 노드
+ros2 launch voice_agent voice_robot_node.launch.py
 
 # LLM 테스트용 터미널
 ros2 run llm_robot_agent input_publisher

@@ -73,16 +73,6 @@ COMMAND_MAP = {
         RTC_TOPIC["SPORT_MOD"],
         {"api_id": SPORT_CMD["Pose"], "parameter": {"flag": True}},
     ),
-    "lidar_switch": lambda cmd: (
-        RTC_TOPIC["ULIDAR_SWITCH"],
-        {"parameter": "ON" if cmd["enabled"] else "OFF"},
-    ),
-}
-
-ULIDAR_TOPICS = {
-    "ULIDAR": "rt/utlidar/imu",
-    "ULIDAR_ARRAY": "rt/utlidar/cloud",
-    "ULIDAR_STATE": "rt/lf/lowstate",
 }
 
 
@@ -160,7 +150,6 @@ class UnitreeRobotNode(Node):
         # 자세 상태
         self.roll, self.pitch, self.yaw = 0.0, 0.0, 0.0
         self.body_height = 0.0
-        self.ulidar_enabled = False
 
         # 시그널
         self._connected_signal = threading.Event()
@@ -173,55 +162,6 @@ class UnitreeRobotNode(Node):
             target=self.run_asyncio_loop, daemon=True
         )
         self.asyncio_thread.start()
-
-    def _make_ulidar_callback(self, topic_name: str):
-        def _callback(message: dict):
-            try:
-                # print(message)
-                data = message.get("data", {})
-                payload = data.get("data") if isinstance(data, dict) else None
-
-                if isinstance(payload, (bytes, bytearray)):
-                    payload_info = f"bytes={len(payload)}"
-                elif isinstance(payload, list):
-                    payload_info = f"list_len={len(payload)}"
-                elif isinstance(payload, dict):
-                    payload_info = f"dict_keys={len(payload.keys())}"
-                elif payload is None:
-                    payload_info = "payload=None"
-                else:
-                    payload_info = f"type={type(payload).__name__}"
-
-                self._log.info(f"[ULIDAR] {topic_name} 수신 ({payload_info})")
-            except Exception as e:
-                self._log.error(f"[ULIDAR] {topic_name} 로그 처리 오류: {e}")
-
-        return _callback
-
-    def _subscribe_ulidar_topics(self):
-        try:
-            self.conn.datachannel.pub_sub.subscribe(
-                ULIDAR_TOPICS["ULIDAR"],
-                self._make_ulidar_callback("ULIDAR"),
-            )
-            self.conn.datachannel.pub_sub.subscribe(
-                ULIDAR_TOPICS["ULIDAR_ARRAY"],
-                self._make_ulidar_callback("ULIDAR_ARRAY"),
-            )
-            self.conn.datachannel.pub_sub.subscribe(
-                ULIDAR_TOPICS["ULIDAR_STATE"],
-                self._make_ulidar_callback("ULIDAR_STATE"),
-            )
-            self._log.info("ULIDAR 토픽 구독 완료 (switch 제외)")
-        except Exception as e:
-            self._log.error(f"ULIDAR 토픽 구독 실패: {e}")
-
-    def _toggle_ulidar_switch(self):
-        self.ulidar_enabled = not self.ulidar_enabled
-        self._build_and_enqueue(
-            {"type": "lidar_switch", "enabled": self.ulidar_enabled}
-        )
-        self._log.info(f"[ULIDAR_SWITCH] {self.ulidar_enabled} 발행 예약")
 
     def wait_connected(self):
         # self._log.info("Checking something...")
@@ -319,8 +259,6 @@ class UnitreeRobotNode(Node):
                     self._build_and_enqueue({"type": "stand_up"})
                 case "c":
                     self._build_and_enqueue({"type": "balance_stand"})
-                case "l" | "L":
-                    self._toggle_ulidar_switch()
 
         if move_flag:
             self._build_and_enqueue(
@@ -428,13 +366,6 @@ class UnitreeRobotNode(Node):
         self._log.info("Connected to robot!")
         self.conn.video.switchVideoChannel(True)
         self.conn.video.add_track_callback(self.recv_camera_stream)
-
-        # ULIDAR 데이터 수신을 위해 트래픽 세이빙 비활성화 및 구독 등록
-        try:
-            await self.conn.datachannel.disableTrafficSaving(True)
-        except Exception as e:
-            self._log.warning(f"disableTrafficSaving 설정 실패(계속 진행): {e}")
-        self._subscribe_ulidar_topics()
 
         self._connected_signal.set()
 

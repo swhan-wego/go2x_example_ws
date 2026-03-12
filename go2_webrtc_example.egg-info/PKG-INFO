@@ -24,6 +24,7 @@ Requires-Dist: numpy>=1.24.0
 Requires-Dist: edge-tts>=6.1.0
 Requires-Dist: pygame>=2.5.0
 Requires-Dist: webrtcvad>=2.0.10
+Requires-Dist: mediapipe
 
 # Go2 WebRTC 예제 워크스페이스
 
@@ -79,9 +80,10 @@ source install/setup.bash
 ```bash
 cd ~/go2x_example_ws/
 source .venv/bin/activate
+export PYTHONPATH=$PWD/.venv/lib/python3.10/site-packages:$PYTHONPATH
 source install/setup.bash
 # 네트워크 인터페이스가 제대로 설정되지 않았을 경우 아래 명령 실행
-source ./setup_netif.sh 
+source ./setup_netif.sh
 ros2 launch webrtc_common unitree_launch.py
 ```
 
@@ -96,6 +98,8 @@ ros2 launch webrtc_app qrgame_launch.py
 ros2 launch webrtc_app color_track_basic.py
 # LLM 연동 노드
 ros2 launch llm_robot_agent llm_robot_agent.launch.py 
+# TTS/STT 연동 노드
+ros2 launch voice_agent voice_robot_node.launch.py
 
 # LLM 테스트용 터미널
 ros2 run llm_robot_agent input_publisher

@@ -6,6 +6,10 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    # uv 가상환경 내의 python 경로 설정
+    # 보통 프로젝트 루트의 .venv/bin/python (Linux/macOS)
+    venv_python = os.path.join(os.getcwd(), ".venv", "bin", "python")
+
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     params = os.path.join(pkg_root, "config", "unitree_params.yaml")
 
@@ -19,6 +23,7 @@ def generate_launch_description():
         name="unitree_robot_node",
         output="screen",
         arguments=["--ros-args", "--params-file", params],
+        prefix=[venv_python],
     )
 
     node_keyboard = Node(
@@ -27,9 +32,12 @@ def generate_launch_description():
         name="keyboard_handler_node",
         output="screen",
         arguments=["--ros-args", "-p", f"keymap:={keymap_candidate}"],
+        prefix=[venv_python],
     )
 
-    return LaunchDescription([LogInfo(msg="Starting unitree + keyboard nodes"), node_unitree, node_keyboard])
+    return LaunchDescription(
+        [LogInfo(msg="Starting unitree + keyboard nodes"), node_unitree, node_keyboard]
+    )
 
 
 if __name__ == "__main__":
