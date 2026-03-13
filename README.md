@@ -52,7 +52,6 @@ source install/setup.bash
 ```bash
 cd ~/go2x_example_ws/
 source .venv/bin/activate
-export PYTHONPATH=$PWD/.venv/lib/python3.10/site-packages:$PYTHONPATH
 source install/setup.bash
 # 네트워크 인터페이스가 제대로 설정되지 않았을 경우 아래 명령 실행
 source ./setup_netif.sh
@@ -72,6 +71,15 @@ ros2 launch webrtc_app color_track_basic.py
 ros2 launch llm_robot_agent llm_robot_agent.launch.py 
 # TTS/STT 연동 노드
 ros2 launch voice_agent voice_robot_node.launch.py
+# 제스처 인식 노드
+ros2 launch gesture_ctrl gesture_ctrl.launch.py
+# 사람 인식 노드
+ros2 launch image_agent person_crop_node.launch.py
+ros2 launch image_agent person_yolo_node.launch.py
+
+# RTSP 이미지 노드
+ros2 launch image_agent rtsp_image_node.launch.py
+
 
 # LLM 테스트용 터미널
 ros2 run llm_robot_agent input_publisher

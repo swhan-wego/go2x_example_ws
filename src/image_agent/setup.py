@@ -10,7 +10,11 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/rtsp_image_node.launch.py']),
+        ('share/' + package_name + '/launch', [
+            'launch/rtsp_image_node.launch.py',
+            'launch/person_crop_node.launch.py',
+            'launch/person_yolo_node.launch.py',
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,6 +30,8 @@ setup(
     entry_points={
         'console_scripts': [
             'rtsp_image_node = image_agent.rtsp_image_node:main',
+            'person_crop_node = image_agent.person_crop_node:main',
+            'person_yolo_node = image_agent.person_yolo_node:main',
         ],
     },
 )

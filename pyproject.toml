@@ -25,11 +25,13 @@ dependencies = [
     "edge-tts>=6.1.0",
     "pygame>=2.5.0",
     "webrtcvad>=2.0.10",
-    "mediapipe<0.10"
+    "mediapipe>=0.10",
+    "onnxruntime<2.0.0",
+    "ultralytics",
 ]
 
 [tool.uv]
-# uv 전용 설정 (필요시 추가)
+environments = ["sys_platform == 'linux'"]
 
 [tool.setuptools]
 

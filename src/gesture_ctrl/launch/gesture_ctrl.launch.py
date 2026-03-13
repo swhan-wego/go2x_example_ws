@@ -26,9 +26,9 @@ def generate_launch_description():
         [
             # ── 런치 인수 선언 ─────────────────────────────────────────────────
             DeclareLaunchArgument(
-                "camera_index",
-                default_value="0",
-                description="웹캠 장치 번호 (/dev/video<N>)",
+                "image_topic",
+                default_value="/front_camera",
+                description="구독할 이미지 토픽",
             ),
             DeclareLaunchArgument(
                 "smooth_window",
@@ -44,9 +44,8 @@ def generate_launch_description():
                 prefix=venv_python,
                 parameters=[
                     {
-                        "camera_index": LaunchConfiguration("camera_index"),
+                        "image_topic": LaunchConfiguration("image_topic"),
                         "smooth_window": LaunchConfiguration("smooth_window"),
-                        "publish_rate": 10.0,
                     }
                 ],
             ),

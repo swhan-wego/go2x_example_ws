@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-gesture_node.py — 웹캠 기반 손 제스처 인식 ROS2 노드
+gesture_node.py — ROS 토픽 기반 손 제스처 인식 ROS2 노드
 
-웹캠에서 실시간으로 손 제스처를 인식하여 webrtc_unitree_ros.py의
+/image_raw (sensor_msgs/Image) 토픽에서 이미지를 수신하여 손 제스처를 인식하고
 build_cmd 토픽으로 로봇 명령을 전송하는 ROS2 노드입니다.
 
 제스처 매핑:
@@ -27,9 +27,11 @@ import time
 import cv2
 import mediapipe as mp
 import rclpy
+from cv_bridge import CvBridge
 from mediapipe.tasks.python import vision
 from mediapipe.tasks.python.core import base_options as base_options_module
 from rclpy.node import Node
+from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
 from gesture_ctrl.finger_utils import GestureSmoothing, classify_gesture
@@ -73,25 +75,22 @@ def _draw_hand(frame, lm_list):
 
 class GestureNode(Node):
     """
-    웹캠에서 손 제스처를 인식하여 build_cmd 토픽으로 로봇 명령을 전송하는 노드.
+    ROS 이미지 토픽에서 손 제스처를 인식하여 build_cmd 토픽으로 로봇 명령을 전송하는 노드.
 
     파라미터:
-        camera_index  (int,   기본 0)    — 웹캠 장치 번호
-        smooth_window (int,   기본 10)   — 제스처 스무딩 윈도우 크기
-        publish_rate  (float, 기본 10.0) — 프레임 처리 주기 (Hz)
+        image_topic   (str, 기본 "/image_raw") — 구독할 이미지 토픽
+        smooth_window (int, 기본 10)           — 제스처 스무딩 윈도우 크기
     """
 
     def __init__(self):
         super().__init__("gesture_node")
 
         # ── 파라미터 ──────────────────────────────────────────────────────
-        self.declare_parameter("camera_index",  0)
+        self.declare_parameter("image_topic",   "/image_raw")
         self.declare_parameter("smooth_window", 10)
-        self.declare_parameter("publish_rate",  10.0)
 
-        cam_idx    = self.get_parameter("camera_index").value
-        smooth_win = self.get_parameter("smooth_window").value
-        rate       = self.get_parameter("publish_rate").value
+        image_topic = self.get_parameter("image_topic").value
+        smooth_win  = self.get_parameter("smooth_window").value
 
         # ── MediaPipe HandLandmarker (Tasks API) ──────────────────────────
         options = vision.HandLandmarkerOptions(
@@ -106,11 +105,8 @@ class GestureNode(Node):
         )
         self._detector = vision.HandLandmarker.create_from_options(options)
 
-        # ── 웹캠 ──────────────────────────────────────────────────────────
-        self._cap = cv2.VideoCapture(cam_idx)
-        if not self._cap.isOpened():
-            self.get_logger().error(f"카메라 {cam_idx}을 열 수 없습니다.")
-            raise RuntimeError("Camera open failed")
+        # ── CvBridge ──────────────────────────────────────────────────────
+        self._bridge = CvBridge()
 
         # ── 스무딩 ────────────────────────────────────────────────────────
         self._smoother = GestureSmoothing(window=smooth_win)
@@ -118,22 +114,21 @@ class GestureNode(Node):
         # ── 상태 ──────────────────────────────────────────────────────────
         self._last_gesture = ""
 
-        # ── ROS2 퍼블리셔 ─────────────────────────────────────────────────
+        # ── ROS2 퍼블리셔 / 구독자 ────────────────────────────────────────
         self._pub = self.create_publisher(String, "build_cmd", 10)
+        self.create_subscription(Image, image_topic, self._image_callback, 10)
 
-        # ── 타이머 ────────────────────────────────────────────────────────
-        self.create_timer(1.0 / rate, self._process_frame)
+        self.get_logger().info(f"GestureNode 준비 완료 | 구독: {image_topic}")
 
-        self.get_logger().info("GestureNode 준비 완료 | 'q'로 종료")
-
-    def _process_frame(self):
-        ret, frame = self._cap.read()
-        if not ret:
-            self.get_logger().warn("카메라 프레임을 읽을 수 없습니다.")
+    def _image_callback(self, msg: Image):
+        # sensor_msgs/Image → BGR numpy
+        try:
+            frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        except Exception as e:
+            self.get_logger().warn(f"CvBridge 변환 실패: {e}")
             return
 
-        frame = cv2.flip(frame, 1)
-        rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # 종료 키
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -142,9 +137,9 @@ class GestureNode(Node):
             return
 
         # ── 손 제스처 인식 ────────────────────────────────────────────────
-        mp_image   = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-        timestamp  = int(time.monotonic() * 1000)
-        result     = self._detector.detect_for_video(mp_image, timestamp)
+        mp_image  = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        timestamp = int(time.monotonic() * 1000)
+        result    = self._detector.detect_for_video(mp_image, timestamp)
 
         gesture = "unknown"
         if result.hand_landmarks and result.handedness:
@@ -161,9 +156,9 @@ class GestureNode(Node):
             self._last_gesture = smoothed
             cmd = GESTURE_TO_CMD.get(smoothed)
             if cmd is not None:
-                msg = String()
-                msg.data = json.dumps(cmd)
-                self._pub.publish(msg)
+                msg_out = String()
+                msg_out.data = json.dumps(cmd)
+                self._pub.publish(msg_out)
                 self.get_logger().info(f"제스처 → {smoothed} | 명령: {cmd}")
             else:
                 self.get_logger().warn(f"매핑 없는 제스처: {smoothed}")
@@ -182,7 +177,6 @@ class GestureNode(Node):
 
     def destroy_node(self):
         self._detector.close()
-        self._cap.release()
         cv2.destroyAllWindows()
         super().destroy_node()
 
