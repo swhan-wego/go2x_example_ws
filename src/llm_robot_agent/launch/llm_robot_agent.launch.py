@@ -19,6 +19,9 @@ llm_robot_agent.launch.py
   ros2 launch llm_robot_agent llm_robot_agent.launch.py max_speed:=0.10
 """
 
+import os
+
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, LogInfo
@@ -26,6 +29,9 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    # uv 가상환경 내의 python 경로 설정
+    # 보통 프로젝트 루트의 .venv/bin/python (Linux/macOS)
+    venv_python = os.path.join(os.getcwd(), ".venv", "bin", "python")
 
     # ── 런치 인자 선언 ────────────────────────────────────────────────────────
     model_arg = DeclareLaunchArgument(
@@ -66,13 +72,16 @@ def generate_launch_description():
         package="llm_robot_agent",
         executable="llm_interface",
         name="llm_interface_node",
-        parameters=[{
-            "model_name":  LaunchConfiguration("model_name"),
-            "ollama_host": LaunchConfiguration("ollama_host"),
-            "max_history": 10,
-        }],
+        parameters=[
+            {
+                "model_name": LaunchConfiguration("model_name"),
+                "ollama_host": LaunchConfiguration("ollama_host"),
+                "max_history": 10,
+            }
+        ],
         output="screen",
         emulate_tty=True,
+        prefix=venv_python,
     )
 
     # 2. MCP 서버 노드
@@ -80,12 +89,15 @@ def generate_launch_description():
         package="llm_robot_agent",
         executable="mcp_server",
         name="mcp_server_node",
-        parameters=[{
-            "max_speed":    LaunchConfiguration("max_speed"),
-            "max_duration": LaunchConfiguration("max_duration"),
-        }],
+        parameters=[
+            {
+                "max_speed": LaunchConfiguration("max_speed"),
+                "max_duration": LaunchConfiguration("max_duration"),
+            }
+        ],
         output="screen",
         emulate_tty=True,
+        prefix=venv_python,
     )
 
     # 3. 로봇 제어 노드
@@ -93,26 +105,31 @@ def generate_launch_description():
         package="llm_robot_agent",
         executable="robot_control",
         name="robot_control_node",
-        parameters=[{
-            "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
-            "publish_rate":  LaunchConfiguration("publish_rate"),
-        }],
+        parameters=[
+            {
+                "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
+                "publish_rate": LaunchConfiguration("publish_rate"),
+            }
+        ],
         output="screen",
         emulate_tty=True,
+        prefix=venv_python,
     )
 
-    return LaunchDescription([
-        # 런치 인자
-        model_arg,
-        ollama_host_arg,
-        max_speed_arg,
-        max_duration_arg,
-        publish_rate_arg,
-        cmd_vel_topic_arg,
-        # 시작 메시지
-        LogInfo(msg="=== LLM 로봇 에이전트 시스템 시작 ==="),
-        # 노드 실행
-        llm_interface_node,
-        mcp_server_node,
-        robot_control_node,
-    ])
+    return LaunchDescription(
+        [
+            # 런치 인자
+            model_arg,
+            ollama_host_arg,
+            max_speed_arg,
+            max_duration_arg,
+            publish_rate_arg,
+            cmd_vel_topic_arg,
+            # 시작 메시지
+            LogInfo(msg="=== LLM 로봇 에이전트 시스템 시작 ==="),
+            # 노드 실행
+            llm_interface_node,
+            mcp_server_node,
+            robot_control_node,
+        ]
+    )

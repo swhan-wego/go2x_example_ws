@@ -18,6 +18,10 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
+    # uv 가상환경 내의 python 경로 설정
+    # 보통 프로젝트 루트의 .venv/bin/python (Linux/macOS)
+    venv_python = os.path.join(os.getcwd(), ".venv", "bin", "python")
+
     # ── Find installed package share directories ───────────────────────
     common_share = get_package_share_directory("webrtc_common")
     app_share = get_package_share_directory("webrtc_app")
@@ -67,6 +71,7 @@ def generate_launch_description():
         name="unitree_robot_node",
         output="screen",
         arguments=["--ros-args", "--params-file", params_unitree],
+        prefix=venv_python,
     )
 
     node_keyboard = Node(
@@ -75,6 +80,7 @@ def generate_launch_description():
         name="keyboard_handler_node",
         output="screen",
         arguments=["--ros-args", "-p", f"keymap:={keymap}"],
+        prefix=venv_python,
     )
 
     # 3. ColorBlockTrackerNode: 카메라 이미지에서 색깔 블록 검출
@@ -98,6 +104,7 @@ def generate_launch_description():
                     "draw_debug:=false",
                     *tracker_params_args,
                 ],
+                prefix=venv_python,
             ),
         ],
     )
@@ -125,6 +132,7 @@ def generate_launch_description():
                     "show_crosshair:=true",
                     *vis_params_args,
                 ],
+                prefix=venv_python,
             ),
         ],
     )

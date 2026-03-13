@@ -10,6 +10,7 @@ gesture_ctrl.launch.py — 제스처 컨트롤 통합 런치 파일 (6.5절)
   ros2 launch gesture_ctrl gesture_ctrl.launch.py camera_index:=1 smooth_window:=15
 """
 
+import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
@@ -17,6 +18,10 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    # uv 가상환경 내의 python 경로 설정
+    # 보통 프로젝트 루트의 .venv/bin/python (Linux/macOS)
+    venv_python = os.path.join(os.getcwd(), ".venv", "bin", "python")
+
     return LaunchDescription(
         [
             # ── 런치 인수 선언 ─────────────────────────────────────────────────
@@ -36,7 +41,7 @@ def generate_launch_description():
                 executable="gesture_node",
                 name="gesture_node",
                 output="screen",
-                prefix="/home/wego/go2x_example_ws/.venv/bin/python3",
+                prefix=venv_python,
                 parameters=[
                     {
                         "camera_index": LaunchConfiguration("camera_index"),

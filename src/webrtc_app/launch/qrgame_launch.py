@@ -16,6 +16,10 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
+    # uv 가상환경 내의 python 경로 설정
+    # 보통 프로젝트 루트의 .venv/bin/python (Linux/macOS)
+    venv_python = os.path.join(os.getcwd(), ".venv", "bin", "python")
+
     # Find installed webrtc_common package share directory
     common_share = get_package_share_directory("webrtc_common")
 
@@ -24,7 +28,9 @@ def generate_launch_description():
     keymap_candidate = os.path.join(common_share, "config", "key_config.yaml")
     if not os.path.exists(keymap_candidate):
         # fallback to package internal path
-        keymap_candidate = os.path.join(common_share, "webrtc_common", "key_config.yaml")
+        keymap_candidate = os.path.join(
+            common_share, "webrtc_common", "key_config.yaml"
+        )
 
     node_unitree = Node(
         package="webrtc_common",
@@ -32,6 +38,7 @@ def generate_launch_description():
         name="unitree_robot_node",
         output="screen",
         arguments=["--ros-args", "--params-file", params],
+        prefix=venv_python,
     )
 
     node_keyboard = Node(
@@ -40,6 +47,7 @@ def generate_launch_description():
         name="keyboard_handler_node",
         output="screen",
         arguments=["--ros-args", "-p", f"keymap:={keymap_candidate}"],
+        prefix=venv_python,
     )
 
     node_qrcode = Node(
@@ -54,6 +62,7 @@ def generate_launch_description():
             "-p",
             "image_topic:=/front_camera",
         ],
+        prefix=venv_python,
     )
 
     node_qrgame = Node(
@@ -61,6 +70,7 @@ def generate_launch_description():
         executable="webrtc_qrgame",
         name="qrgame_node",
         output="screen",
+        prefix=venv_python,
     )
 
     return LaunchDescription(
