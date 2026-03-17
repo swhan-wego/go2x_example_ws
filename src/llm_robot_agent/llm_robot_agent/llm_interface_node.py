@@ -40,6 +40,7 @@ SYSTEM_PROMPT = """당신은 로봇 제어 AI 에이전트입니다.
     sound_type: "bark" | "whine" | "happy" | "sad"
   get_battery()                                 배터리 잔량 조회
   check_obstacle(distance_threshold: float)     전방 장애물 감지
+  hungry_dog()                                  배고픈 강아지 흉내 (낑낑→앉기→낑낑→포즈→일어서기 시퀀스)
 
 반드시 JSON 배열 형식으로만 응답하세요. 예시:
 [{"tool": "move_forward", "args": {"speed": 0.15, "duration": 2.0}}]
@@ -51,16 +52,19 @@ class LLMInterfaceNode(Node):
         super().__init__("llm_interface_node")
 
         # ── 파라미터 선언 ──────────────────────────────────────────────────────
-        self.declare_parameter("model_name",  "llama3.1:8b")
+        self.declare_parameter("model_name", "llama3.1:8b")
         self.declare_parameter("ollama_host", "http://localhost:11434")
         self.declare_parameter("max_history", 10)
 
-        self.model_name  = self.get_parameter(
-            "model_name").get_parameter_value().string_value
-        self.ollama_host = self.get_parameter(
-            "ollama_host").get_parameter_value().string_value
-        self.max_history = int(self.get_parameter(
-            "max_history").get_parameter_value().integer_value)
+        self.model_name = (
+            self.get_parameter("model_name").get_parameter_value().string_value
+        )
+        self.ollama_host = (
+            self.get_parameter("ollama_host").get_parameter_value().string_value
+        )
+        self.max_history = int(
+            self.get_parameter("max_history").get_parameter_value().integer_value
+        )
 
         # ── 대화 이력 초기화 ───────────────────────────────────────────────────
         self.conversation_history = []
@@ -95,14 +99,13 @@ class LLMInterfaceNode(Node):
         self.get_logger().info(f"[입력] {user_text}")
 
         # 대화 이력에 사용자 메시지 추가
-        self.conversation_history.append(
-            {"role": "user", "content": user_text}
-        )
+        self.conversation_history.append({"role": "user", "content": user_text})
 
         # 이력 길이 제한 (max_history 턴 × 2 메시지)
         if len(self.conversation_history) > self.max_history * 2:
-            self.conversation_history = \
-                self.conversation_history[-self.max_history * 2:]
+            self.conversation_history = self.conversation_history[
+                -self.max_history * 2 :
+            ]
 
         try:
             tool_calls_json = self._call_llm()
@@ -123,9 +126,7 @@ class LLMInterfaceNode(Node):
         reply = response["message"]["content"].strip()
 
         # 어시스턴트 응답 이력 추가
-        self.conversation_history.append(
-            {"role": "assistant", "content": reply}
-        )
+        self.conversation_history.append({"role": "assistant", "content": reply})
 
         self.get_logger().info(f"[LLM 응답] {reply}")
         return reply
@@ -144,9 +145,7 @@ class LLMInterfaceNode(Node):
         out_msg = String()
         out_msg.data = tool_calls_json
         self.pub_tool_call.publish(out_msg)
-        self.get_logger().info(
-            f"[발행] /llm_tool_call — {len(parsed)}개 Tool Call"
-        )
+        self.get_logger().info(f"[발행] /llm_tool_call — {len(parsed)}개 Tool Call")
 
 
 # ── 엔트리포인트 ──────────────────────────────────────────────────────────────

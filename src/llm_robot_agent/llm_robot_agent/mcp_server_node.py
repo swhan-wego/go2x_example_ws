@@ -23,6 +23,7 @@ mcp_server_node.py
 
 import json
 import math
+import threading
 
 import rclpy
 from rclpy.node import Node
@@ -74,6 +75,7 @@ class MCPServerNode(Node):
             "play_sound":     self._handle_play_sound,
             "get_battery":    self._handle_get_battery,
             "check_obstacle": self._handle_check_obstacle,
+            "hungry_dog":     self._handle_hungry_dog,
         }
 
         self.get_logger().info(
@@ -220,6 +222,20 @@ class MCPServerNode(Node):
             "query_type": "obstacle",
             "threshold":  threshold,
         }
+
+    def _handle_hungry_dog(self, args: dict) -> None:
+        """배고픈 강아지 행동 시퀀스: 낑낑 → 앉기 → 낑낑 → 포즈 → 일어서기"""
+        sequence = [
+            (0.0, {"type": "sound", "sound_type": "whine"}),
+            (1.5, {"type": "sit"}),
+            (3.0, {"type": "sound", "sound_type": "whine"}),
+            (4.5, {"type": "pose"}),
+            (6.0, {"type": "stand_up"}),
+        ]
+        for delay, cmd in sequence:
+            threading.Timer(delay, self._publish_cmd, args=(cmd,)).start()
+        self.get_logger().info("🐶 배고픈 강아지 시퀀스 시작")
+        return None  # 즉시 발행 없음; 타이머가 순차 처리
 
 
 # ── 엔트리포인트 ──────────────────────────────────────────────────────────────
