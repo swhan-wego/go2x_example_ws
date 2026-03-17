@@ -1,37 +1,31 @@
 import os
 import sys
 from launch import LaunchDescription
-from launch.actions import LogInfo
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # uv 가상환경 내의 python 경로 설정
-    # 보통 프로젝트 루트의 .venv/bin/python (Linux/macOS)
     venv_python = os.path.join(os.getcwd(), ".venv", "bin", "python")
 
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    params = os.path.join(pkg_root, "config", "unitree_params.yaml")
 
-    node_unitree = Node(
+    keymap_candidate = os.path.join(pkg_root, "config", "key_config.yaml")
+    if not os.path.exists(keymap_candidate):
+        keymap_candidate = os.path.join(pkg_root, "webrtc_common", "key_config.yaml")
+
+    node_keyboard_handler = Node(
         package="webrtc_common",
-        executable="webrtc_unitree_ros",
-        name="unitree_robot_node",
+        executable="webrtc_keyboard_handler",
+        name="keyboard_handler_node",
         output="screen",
-        arguments=["--ros-args", "--params-file", params],
+        arguments=["--ros-args", "-p", f"keymap:={keymap_candidate}"],
         prefix=[venv_python],
     )
 
-    return LaunchDescription(
-        [
-            LogInfo(msg="Starting unitree node"),
-            node_unitree,
-        ]
-    )
+    return LaunchDescription([node_keyboard_handler])
 
 
 if __name__ == "__main__":
-    # Allow running the launch file directly with python3
     from launch import LaunchService
 
     ls = LaunchService(argv=sys.argv[1:])

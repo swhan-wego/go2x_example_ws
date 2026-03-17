@@ -13,6 +13,8 @@ setup(
             "share/" + package_name + "/launch",
             [
                 "launch/unitree_launch.py",
+                "launch/terminal_keyboard_launch.py",
+                "launch/keyboard_handler_launch.py",
             ],
         ),
         (

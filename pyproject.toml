@@ -28,6 +28,7 @@ dependencies = [
     "mediapipe>=0.10",
     "onnxruntime<2.0.0",
     "ultralytics",
+    "readchar",
 ]
 
 [tool.uv]

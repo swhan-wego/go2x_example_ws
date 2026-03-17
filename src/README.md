@@ -80,7 +80,7 @@ entry_points={
 
 ```bash
 cd /home/wego/go2x_example_ws
-colcon build --packages-select my_py_pkg
+colcon build --symlink-install --packages-select my_py_pkg
 ```
 
 ## 6) 환경 적용 및 실행

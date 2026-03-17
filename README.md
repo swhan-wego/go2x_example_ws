@@ -63,6 +63,11 @@ ros2 launch webrtc_common unitree_launch.py
 ```bash
 # Go2 베이스 노드
 ros2 launch webrtc_common unitree_launch.py
+# 터미널 키보드
+ros2 launch webrtc_common terminal_keyboard_launch.py
+# 전체 입력 키보드
+ros2 launch webrtc_common keyboard_handler_launch.py
+
 # QR 게임 노드
 ros2 launch webrtc_app qrgame_launch.py
 # 색상 추적 기본 노드
@@ -75,7 +80,9 @@ ros2 launch voice_agent voice_robot_node.launch.py
 ros2 launch gesture_ctrl gesture_ctrl.launch.py
 # 사람 인식 노드
 ros2 launch image_agent person_crop_node.launch.py
-ros2 launch image_agent person_yolo_node.launch.py
+ros2 launch image_agent object_yolo_node.launch.py target_class:=32
+# 물체 추종 노드
+ros2 launch image_agent object_tracking_node.launch.py
 
 # RTSP 이미지 노드
 ros2 launch image_agent rtsp_image_node.launch.py

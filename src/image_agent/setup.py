@@ -13,7 +13,8 @@ setup(
         ('share/' + package_name + '/launch', [
             'launch/rtsp_image_node.launch.py',
             'launch/person_crop_node.launch.py',
-            'launch/person_yolo_node.launch.py',
+            'launch/object_yolo_node.launch.py',
+            'launch/object_tracking_node.launch.py',
         ]),
     ],
     install_requires=['setuptools'],
@@ -31,7 +32,8 @@ setup(
         'console_scripts': [
             'rtsp_image_node = image_agent.rtsp_image_node:main',
             'person_crop_node = image_agent.person_crop_node:main',
-            'person_yolo_node = image_agent.person_yolo_node:main',
+            'object_yolo_node = image_agent.object_yolo_node:main',
+            'object_tracking_node = image_agent.object_tracking_node:main',
         ],
     },
 )

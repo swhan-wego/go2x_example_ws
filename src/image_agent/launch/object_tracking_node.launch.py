@@ -15,25 +15,25 @@ _pythonpath = _VENV_SITE + os.pathsep + os.environ.get("PYTHONPATH", "")
 def generate_launch_description():
     node = Node(
         package="image_agent",
-        executable="person_yolo_node",
-        name="person_yolo_node",
+        executable="object_tracking_node",
+        name="object_tracking_node",
         output="screen",
         additional_env={"PYTHONPATH": _pythonpath},
         parameters=[
-            {"image_topic":    "/front_camera"},
-            {"person_topic":   "/person_image"},
-            # 모델 경로: 절대경로 또는 워크스페이스 상대경로
-            {"model_path":     "models/yolov8n.onnx"},
-            # 검출 신뢰도 임계값
-            {"conf_threshold": 0.4},
-            # NMS IoU 임계값
-            {"iou_threshold":  0.45},
-            # 모델 입력 해상도
-            {"input_size":     640},
-            # bbox 주변 여백 비율
-            {"padding":        0.05},
-            # True: 검출된 모든 사람 발행 / False: 가장 큰 사람 1명만 발행
-            {"publish_all":    False},
+            # 입력 위치 토픽 (object_yolo_node 출력과 일치)
+            {"object_pos_topic": "/object_position"},
+            # 로봇 이동 명령 토픽
+            {"cmd_vel_topic":    "/cmd_vel"},
+            # X축 정렬 허용 오차 (0.01~0.5)
+            {"x_tolerance":      0.1},
+            # 전진 정지 Y 임계값 — y > (1 - y_stop_range) 이면 도달 (0.01~0.5)
+            {"y_stop_range":     0.25},
+            # 제어 루프 주기 초 (0.01~1.0)
+            {"timer_period":     0.1},
+            # 최대 이동/회전 속도 (0.01~1.0)
+            {"max_speed":        0.3},
+            # 위치 수신 타임아웃 초
+            {"pos_timeout":      1.0},
         ],
     )
 
